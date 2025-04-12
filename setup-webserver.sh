@@ -2,7 +2,7 @@
 : << COMMENT
 En el servidor [SWEB]:
   (1) Instalar servidor y configurar sitio web default.
-  (2) Solo permitir acceso al servidor web al equipo [PC20].
+  (2) Solo permitir acceso al servidor web al equipo [PC20: 192.168.2.10].
 COMMENT
 
 # INSTALAR APACHE2
