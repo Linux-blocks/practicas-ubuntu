@@ -1,6 +1,9 @@
 ##!/bin/sh
 
-: << COMMENT
+# NO EJECUTAR. NO ES UN SCRIPT. ES UNA GUÍA DE COMANDOS A EJECUTAR INTERACTIVAMENTE
+# =================================================================================
+
+: << 'COMMENT'
     Este fichero no es un script. 
     Contiene secuencias de comandos a ejecutar interactivamente en el terminal
     Objetivos: 
@@ -8,6 +11,8 @@
     (2) Configurar servicio: Puerto personalizado: 15022
         No permitir sesión como root. Solo usuario:  "usuario". 
         Autenticación por contraseña.
+    Se necesita tener creados usuario y usuariofoo
+    echo usuariofoo:foopass | sudo chpasswd
     ! OJO: Ubuntu server 24 LTS.
 COMMENT
 
@@ -25,71 +30,84 @@ sudo apt install openssh-server
 COMMENT
 # Se prefiere config en fichero aparte, dentro carpeta sshd_config.d en vez de editar sshd_config:
 cd /etc/ssh
-sudo tee > sshd_config.d/00-custom-port.conf << 'EOF'
+sudo tee > sshd_config.d/00-custom.conf << 'EOF'
 Port 15022
 EOF
 
 : << 'COMMENT'
-Desde Ubuntu 22 sshd es gobernado por un servicio ayudante: ssh.socket
-Así, no hay que reload|restart ssh para aplicar sino daemon-reload y ssh.socket
+Desde Ubuntu 22 la conexión ssh tiene un servicio socket.ssh interpuesto al servicio ssh. 
+Así, para aplicar cambios de configuración hay que: recargar system manager config (systemd files)
+y reiniciar el servicio ssh.socket.
+Motivo de ssh.socket: Ahorra RAM al activar ssh solo cuando llega una conexión. 
+Para volver a config estándar: 
+systemctl disable --now ssh.socket && systemctl enable --now ssh.service
 COMMENT
-# REINICIAR SERVICIOS PARA APLICAR CONFIG y comprobar conexión
+# REINICIAR SERVICIOS PARA APLICAR, según classic o modern ssh config
 # comprobar sintáxis de ficheros conf. No muestra nada si OK
 sshd -t
+#sudo systemctl restart ssh
 sudo systemctl daemon-reload
 sudo systemctl restart ssh.socket
-# verificar puerto a la escucha, viendo todos listen y established
-ss -tulpn
+
+# COMPROBAR FUNCIONAMIENTO
+# verificar puerto a la escucha
+ss -tulpan
 # Comprobar conexión con password y puerto desde un cliente:
 ssh -p 15022 usuario@192.168.1.1
 
-: << 'COMMENT'
-Desde Ubuntu 22 la conexión ssh tiene un servicio socket.ssh interpuesto al servicio ssh. Resultando que ListenAddress y Port en los *.conf no se aplican. Se aplican otras config de socket.ssh.
-Motivo: socket.ssh ahorra RAM al activar ssh solo cuando llega una conexión. Para volver a config estándar: systemctl disable --now ssh.socket && systemctl enable --now ssh.service
-COMMENT
-Configurar autenticación clave pública
+: << 'FEATURE'
+CONFIGURAR AUTENTICACIÓN DE CLAVE PÚBLICA
 Este es un subejercicio opcional. Permite un nivel adicional de seguridad usando algo que se tiene (cert) y algo que se sabe (password). Pasos: 
     (1) Generar el par de claves en el cliente, usando el usuario  'usuario', contraseña  y algoritmo ed25519 (desde ubuntu 22 no se soporta RSA).
     (2) Copiar la clave pública en el servidor ssh.
     (3) Habilitar esta autenticación ssh en el servidor. Si se modifica la config, reiniciar para aplicar.
     (4) Probar conectar con esta autenticación.
+FEATURE
 
-# (1) Crear el par en el pc cliente
-# Con -N se indica contraseña de uso
-ssh-keygen -t ed25519 -N 'Usuarionping' -f "~/.ssh/router_ubuntu_edkey"
+# (1) Crear e instalar keys para usuario en R
+# Nota: se pueden crear en windows si linux subsystem habilitado
+#ssh-keygen -t rsa -b 4096 -N 'usuario-lkey' -f "~/.ssh/usuario_router_rsakey" -C "Usuario-router-rsakey"
+ssh-keygen -t ed25519 -N 'usuario-key' -f "~/.ssh/usuario_router_edkey" -C "usuario-router-edkey"
+
+# Crear e instalar key para Usuariofoo. Pero no instalar pubkey en R
+#ssh-keygen -t rsa -b 4096 -N 'usuariofoo-lkey' -f "~/.ssh/usuariofoo_router_rsakey" -C "Usuariofoo-router-rsakey"
+sudo ssh-keygen -t ed25519 -N 'usuariofoo-key' -f "/home/usuariofoo/.ssh/usuariofoo_router_edkey" -C "usuariofoo-router-edkey"
+#ssh-copy-id -i usuario_foorouter_edkey -p 15022 usuariofoo@192.168.1.1
+
+# opc: añadir la clave a ssh-agent (un llavero)
+#sudo ssh-add /home/Usuarioping/.ssh/Usuarioping-r-ed25519
 
 # (2) copiar la clave pública al servidor
-# Aunque tenga config publickey 
-# se puede usar password para copiarla
-# NO sobreescribe claves, solo añade !!
+# Aunque tenga config publickey se puede usar password para copiarla. NO sobreescribe claves, solo añade !!
 cd ~/.ssh
-ssh-copy-id -i router_ubuntu_edkey -p 22422 usuario@192.168.1.1
+ssh-copy-id -i usuario_router_edkey -p 15022 usuario@192.168.1.1
 
-# (4) probar conexión con clave pública
-# Se pide contraseña de cert, si OK se
-# entra en la consola del servidor
-# sin usar la autenticación por contraseña
+# (3) probar conexión con clave pública
+# Se pide contraseña de cert, si OK se entra en la consola del servidor sin paswword auth
 ssh -i router_ubuntu_edkey -p 15022 usuario@192.168.1.1
-Permisos por usuarios y grupos
-Subejercicio opcional. Permite configurar acceso más  granular mediante varias directivas. 
-# Crear el grupo y añadirle 'usuario'
+
+: << 'FEATURE'
+CONFIGURAR PERMISOS PARA GRUPOS
+Acceso más granular
+FEATURE
+# Crear un grupo de acceso por ssh y añadirle 'usuario'
 sudo groupadd gr_ssh
 usermod -aG gr_ssh usuario
 
-# admitir a los usuarios del grupo ssh
-nano /etc/ssh/sshd_config.d/00-custom.conf
+# admitir a los usuarios del grupo gr_ssh
+#nano /etc/ssh/sshd_config.d/00-custom.conf
+sudo tee >> sshd_config.d/00-custom.conf << 'EOF'
+# Orden de precedencia: DenyUsers - AllowUsers - DenyGroups - AllowGroups
 AllowGroups gr_ssh
-# reiniciar servicio para aplicar
-sudo systemctl restart ssh
+EOF
 
-Verificar que solo usuarios del gr_ssh pueden acceder al servidor. Para ello creamos un usuario de prueba.
-# Crear usuario nuevo de prueba
-sudo useradd foouser
-# Se ha creado sin password, asignarla
-# porque con PermitEmptyPassword no
-# no se podría acceder sin ella
-sudo passwd foouser
+# reiniciar servicio para aplicar, según classic o modern ssh config
+sshd -t
+#sudo systemctl restart ssh
+sudo systemctl daemon-reload
+sudo systemctl restart ssh.socket
 
-# e intentamos acceder desde cliente remoto
-# debiendo denegarnos el acceso
-ssh -p 22422 foouser@192.168.1.1
+# COMPROBAR FUNCIONAMIENTO
+# acceso desde cliente remoto
+ssh -p 15022 usuario@192.168.1.1
+ssh -p 15022 usuariofoo@192.168.1.1
