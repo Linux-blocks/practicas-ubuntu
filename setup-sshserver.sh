@@ -7,11 +7,11 @@
     Este fichero no es un script. 
     Contiene secuencias de comandos a ejecutar interactivamente en el terminal
     Objetivos: 
-    (1) Instalarlo si no estuviera. En [R:192.168.1.1] y [SWEB:192.168.2.10]
+    (1) Instalarlo si no lo estuviera. En [R:192.168.1.1]
     (2) Configurar servicio: Puerto personalizado: 15022
         No permitir sesión como root. Solo usuario:  "usuario". 
         Autenticación por contraseña.
-    Se necesita tener creados usuario y usuariofoo
+    Se necesita tener creados usuario y usuariofoo en R y clientes
     echo usuariofoo:foopass | sudo chpasswd
     ! OJO: Ubuntu server 24 LTS.
 COMMENT
@@ -64,27 +64,34 @@ Este es un subejercicio opcional. Permite un nivel adicional de seguridad usando
     (4) Probar conectar con esta autenticación.
 FEATURE
 
-# (1) Crear e instalar keys para usuario en R
+# (1) CREAR KEYS EN R o en un cliente
 # Nota: se pueden crear en windows si linux subsystem habilitado
 #ssh-keygen -t rsa -b 4096 -N 'usuario-lkey' -f "~/.ssh/usuario_router_rsakey" -C "Usuario-router-rsakey"
-ssh-keygen -t ed25519 -N 'usuario-key' -f "~/.ssh/usuario_router_edkey" -C "usuario-router-edkey"
+sudo ssh-keygen -t ed25519 -N 'usuario-key' -f "~/.ssh/usuario_router_edkey" -C "usuario-router-edkey"
 
-# Crear e instalar key para Usuariofoo. Pero no instalar pubkey en R
+# Crear e instalar keys para Usuariofoo. Pero no instalar pubkey en R
 #ssh-keygen -t rsa -b 4096 -N 'usuariofoo-lkey' -f "~/.ssh/usuariofoo_router_rsakey" -C "Usuariofoo-router-rsakey"
 sudo ssh-keygen -t ed25519 -N 'usuariofoo-key' -f "/home/usuariofoo/.ssh/usuariofoo_router_edkey" -C "usuariofoo-router-edkey"
 #ssh-copy-id -i usuario_foorouter_edkey -p 15022 usuariofoo@192.168.1.1
 
-# opc: añadir la clave a ssh-agent (un llavero)
-#sudo ssh-add /home/Usuarioping/.ssh/Usuarioping-r-ed25519
+# opc: añadir la clave a ssh-agent (un llavero) para usar sin pedir clave. P.e, en automatización
+# comprobar si está instalado y en ejecución
+#eval $(ssh-agent)
+#sudo ssh-add ~/.ssh/usuario-router-edkey
 
-# (2) copiar la clave pública al servidor
-# Aunque tenga config publickey se puede usar password para copiarla. NO sobreescribe claves, solo añade !!
+# (2) INSTALAR PUB KEY EN R
+# añade la clave pública al fichero ~/.ssh/authorized_keys de usuario
 cd ~/.ssh
-ssh-copy-id -i usuario_router_edkey -p 15022 usuario@192.168.1.1
+ssh-copy-id -i ~/.ssh/usuario_router_edkey -p 15022 usuario@192.168.1.1
 
-# (3) probar conexión con clave pública
-# Se pide contraseña de cert, si OK se entra en la consola del servidor sin paswword auth
-ssh -i router_ubuntu_edkey -p 15022 usuario@192.168.1.1
+# (3) HABILITAR AUTH CON KEYS
+#nano /etc/ssh/sshd_config.d/00-custom.conf
+sudo tee >> sshd_config.d/00-custom.conf << 'EOF'
+PubkeyAuthentication yes
+EOF
+
+# (4) COMPROBAR FUNCIONAMIENTO
+ssh -v -i router_ubuntu_edkey -p 15022 usuario@192.168.1.1
 
 : << 'FEATURE'
 CONFIGURAR PERMISOS PARA GRUPOS
@@ -97,7 +104,7 @@ usermod -aG gr_ssh usuario
 # admitir a los usuarios del grupo gr_ssh
 #nano /etc/ssh/sshd_config.d/00-custom.conf
 sudo tee >> sshd_config.d/00-custom.conf << 'EOF'
-# Orden de precedencia: DenyUsers - AllowUsers - DenyGroups - AllowGroups
+# Orden de precedencia: Intersección de DenyUsers - AllowUsers - DenyGroups - AllowGroups
 AllowGroups gr_ssh
 EOF
 
