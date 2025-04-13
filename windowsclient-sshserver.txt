@@ -1,0 +1,50 @@
+##!/bin/sh
+
+En Windows 10 1809+ y Windows 11
+
+Comprobar si el cliente ya está instalado
+-----------------------------------------
+En cmd, ejecutar ssh. Si lo está, salta al apartado 'conectar'. Si no lo está, ve al siguiente ...
+
+Instalar cliente y conectar a un servidor
+-----------------------------------------
+Configuración - aplicaciones - aplicaciones y características - Características opcionales
+Comprobar si "cliente openSSH" está instalado
+Si no lo está, lo instalas mediante "más características"
+
+Conectar a un servidor ssh
+--------------------------
+Abre cmd.exe como administrador
+ssh username@serverssh [-i privkeyfile] [-p <port_number>]
+
+Instalar servidor ssh en windows 
+--------------------------------
+Configuración - aplicaciones - aplicaciones y características - características opcionales
+Agregar una, openSSH, e instalar
+Las claves de host se almacenan en %programdata%\ssh
+Abrir la consola "Servicios" y fijar los servicios "agente de autenticación openSSH" y "openSSH server" en automático
+Con powershell: get-service -name sshd | set-service -startuptype automatic
+FW: comprobar que el puerto de escucha esté abierto para conexiones entrantes, configurado 
+
+Configurar autenticación por keys
+---------------------------------
+Usar los comandos habituales para linux (ver el fichero setup-sshserver.sh)
+Recomendado usar como destino: %userprofile%\.ssh\
+
+Para instalar la clave pública en servidor ssh linux: (ver el fichero setup-sshserver.sh)
+Para instalar la clave pública en servidor ssh windows, desde un cliente windows:
+Para usuarios no administradores:
+$pubKey = Get-Content -Path $env:USERPROFILE\.ssh\<file>.pub
+$remotePowershell = "powershell New-Item -Force -ItemType Directory -Path $env:USERPROFILE\.ssh; Add-Content -Force -Path $env:USERPROFILE\.ssh\authorized_keys -Value '$pubKey'"
+ssh username@serverssh $remotePowershell
+
+Para usuarios no administradores:
+$pubKey = Get-Content -Path $env:USERPROFILE\.ssh\<file>.pub
+$remotePowershell = "powershell Add-Content -Force -Path $env:ProgramData\ssh\administrators_authorized_keys -Value '''$pubKey''';icacls.exe ""$env:ProgramData\ssh\administrators_authorized_keys"" /inheritance:r /grant ""*S-1-5-32-544:F"" /grant ""SYSTEM:F"""
+ssh username@serverssh $remotePowershell
+
+
+
+
+
+
