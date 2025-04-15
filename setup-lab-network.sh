@@ -30,7 +30,26 @@ network:
     enp0s3:
       dhcp: true
     enp8s0: 
-      addresses: [192.16.8.1.1/24]
+      addresses: [192.168.1.1/24]
     enp9s0:
-      addreses: [192.168.2.1/24]
+      addresses: [192.168.2.1/24]
 EOF
+# aplica una vez guardado. Pero comprobar con
+ip addr
+
+# HABILITAR IP ROUTING en R
+# Permite conectar entre las LAN y estas acceder a Internet, según reglas FW cadena FORWARD
+# comprobar estado de ipv4 forwarding (routing)
+sysctl net.ipv4.ip_forward
+#sudo sysctl -w net.ipv4.ip_forward=1  # no modifica /etc/sysctl.conf. Solo durante la sesión
+: < 'EDITAR_FICHERO'
+/etc/sysctl.conf
+Descomentar o crear net.ipv4.ip_forward=1
+guardar
+# para aplicar lo cambios de sysctl.conf y hacer el routing permanente
+sysctl -p
+EDITAR_FICHERO
+
+
+
+
