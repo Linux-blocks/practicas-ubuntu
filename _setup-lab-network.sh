@@ -71,7 +71,7 @@ NIC
 # Aplicar la nueva configuración de red:
 sudo systemctl restart networking
 # comprobar configuración actual
-sudo ifconfig a
+ip a     # o la antigua ifconfig -a
 
 # ESTABLECER ENRUTADO ENTRE LAS SUBREDES LAN1 Y LAN2. En R
 # ========================================================
@@ -101,6 +101,10 @@ ping 192.168.1.10    # desde PC20 a PC10
 
 # CONFIGURAR ACCESO A INTERNET PARA LAS LAN a través de R
 # =========================================
+# Qué fw está activo? en Ubuntu 20.04+, iptables a través de ufw (frontend)
+# Se puede config iptables directam o a través de ufw
+update-alternatives --query iptables
+
 # reset FW:
 sudo iptables -F
 sudo iptables -X
@@ -117,7 +121,15 @@ sudo iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHE
 sudo iptables -A FORWARD -i enp0s8 -o enp0s3 -j ACCEPT
 sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -m state --state RELATED,ESTABLISHED -j ACCEPT
 sudo iptables -A FORWARD -i enp0s9 -o enp0s3 -j ACCEPT
-
+# Persistir la configuración entre inicios. Se usará el paquete iptables-persistent
+# Si está instalado el paquete, existirá /etc/iptables/
+sudo apt install iptables-persistent
+# Guardar la configuración actual iptables
+sudo iptables-save > /etc/iptables/rules.v4
+# si el anterior comando genera error de permisos, usar 
+sudo bash -c "iptables-save > /etc/iptables/rules.v4 "
+# o el siguiente para crear el fichero v4
+sudo dpkg-reconfigure iptables-persistent
 
 
 
