@@ -1,4 +1,4 @@
-#! /bib/sh
+#! /bin/sh
 : << COMMENT
 En el servidor [SWEB]:
   (1) Instalar servidor y configurar sitio web default.
