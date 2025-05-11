@@ -95,7 +95,7 @@ ping 192.168.2.10    # desde PC10 a PC20
 ping 192.168.1.1     # desde PC20 al GW de LAN1
 ping 192.168.1.10    # desde PC20 a PC10
 # Si no se llega a Windows (PC20) 
-# Comprobar que se permite ping entrante en Windows. 
+# Comprobar que se permite ping entrante en Windows (ver COMMENT inicial)
 # Si aún no llega, desactivar FW en perfil público y luego el privado.
 # Si ya funciona, hay un regla entrante que bloquea
 
@@ -121,6 +121,7 @@ sudo iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHE
 sudo iptables -A FORWARD -i enp0s8 -o enp0s3 -j ACCEPT
 sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -m state --state RELATED,ESTABLISHED -j ACCEPT
 sudo iptables -A FORWARD -i enp0s9 -o enp0s3 -j ACCEPT
+
 # Persistir la configuración entre inicios. Se usará el paquete iptables-persistent
 # Si está instalado el paquete, existirá /etc/iptables/
 sudo apt install iptables-persistent
