@@ -5,7 +5,8 @@ En el servidor [SWEB]:
   (2) Solo permitir acceso al servidor web al equipo [PC20: 192.168.2.10].
 COMMENT
 
-# INSTALAR APACHE2
+# (1) Instalar servidor y configurar un sitio web
+#INSTALAR APACHE2
 apt update
 # apt list --installed  lista instalados
 # El pack listado contiene: [installed, 
@@ -53,7 +54,7 @@ sudo systemctl reload apache2
 # (el primer fichero config en sites-available)
 sudo a2dissite 000-default
 
-# RESTRINGIR ACCESOS WEB AL SITIO: Solo a PC20
+# (2) RESTRINGIR ACCESOS WEB AL SITIO: Solo a PC20
 # FW: Acceso web solo desde PC20
 iptables -A INPUT -p tcp -m multiport --dports 80,443 -s 192.168.2.10 -j ACCEPT
 
