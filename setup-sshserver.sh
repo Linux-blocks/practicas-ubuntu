@@ -115,6 +115,6 @@ sudo systemctl daemon-reload
 sudo systemctl restart ssh.socket
 
 # COMPROBAR FUNCIONAMIENTO
-# acceso desde cliente remoto
+# acceso desde cliente remoto con usuario existente y no existente
 ssh -p 15022 usuario@192.168.1.1
 ssh -p 15022 usuariofoo@192.168.1.1
