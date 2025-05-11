@@ -1,4 +1,4 @@
-##!\bin\sh
+##!/bin/sh
 
 # =============================================================
 # CONFIGURACIÓN DEL LABORATORIO PARA PROBAR LAS FUNCIONALIDADES
