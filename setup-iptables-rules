@@ -1,0 +1,101 @@
+# ====================== TIPO DE FW ========================
+# DETERMINAR qué firewall se está usando: iptables o ufw
+sudo iptables --version
+sudo ufw status
+
+# cambiar de ufw a iptables (y desinstalarlo, incluyendo si se desea los config files con --purge)
+sudo ufw disable && sudo apt remove --purge ufw
+# reset iptables por si quedan restos
+
+# cambiar a iptables e instalar si no lo está
+sudo apt install iptables
+
+# COMPROBAR 
+sudo iptables -L                 # configuración activa actual
+sudo cat /etc/iptables/rules.v4  # config guardada
+sudo ufw show added              # como iptables -L
+
+# UFW. Default en Ubuntu. Es un frontend para iptables/iptables-nft. Hay también otro nuevo frontend, nftables
+# COMPROBAR BACKEND usado. 
+sudo iptables -L
+sudo nftables status
+
+# FORWARDING (tráfico de pasarela entre otras redes). habilitar/deshabilitar con persistencia
+
+
+# ===================== CONFIG IPTABLES =================
+# HACER PERMANENTE la config entre inicios del equipo (con iptables). -c incluye contadores: -t es modo test
+sudo apt install iptables-persistent && iptables-save -c > /etc/iptables/rules.v4
+# comprobar estado del servicio
+sudo systemctl is-enable netfilter-persistent.service
+# restaurar manualmente las reglas guardadas
+## sudo iptables-restore -c < /etc/iptables/rules.v4
+
+## diferencia CON NETFILTER-PERSISTENT SAVE:
+# Este es otro paquete (netfilter-persistent). Hacen lo mismo, pero de distinta forma
+# El primero guarda la config en ficheros de texto (manualmente) y la carga al arrancar el sistema (mediante daemon iptables-persistent)
+# El segundo la guarda usando plugins, más flexible, integrado en system (/usr/share/netfilter-persistent/plugins.d). Necesita iptables-persistent!!
+
+# RESET IPTABLES (restablecer la configuración a default)
+iptables -F   # flush all rules de todas las tablas
+iptables -X   # eliminar todas las cadenas personalizadas
+iptables -P INPUT ACCEPT      # procesa los paquetes dirigidos (con destino) al propio host (servicios a la escucha)
+iptables -P FORWARD ACCEPT    
+iptables -P OUTPUT ACCEPT
+
+# CLOSED FW POLICIES. Todo drop. Configurar tras verificar que se ha abierto acceso SSH !!
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT ACCEPT
+
+# ========================== REGLAS GENERALES ===================
+# PERMITIR conexiones entrantes a comunicaciones INICIADAS desde este equipo (así no se deben poner en cada servicios)
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT          # stateful
+# Si directiva OUTPUT DROP, hay que habilitar reglas -A OUTPUT por cada -A INPUT
+
+# NO RESTRINGIR REDIRIGIR a cierto grupo de ips
+iptables -A FORWARD -s 192.168.1.10,192.168.2.10 -j ACCEPT
+iptables -A FORWARD -d 192.168.1.10,192.168.2.10 -j ACCEPT
+
+# NO RESTRINGIR COMUNICACIONES con el servidor a cierto grupo de ips
+iptables -A INPUT -s 192.168.1.10,192.168.2.10 -j ACCEPT
+iptables -A OUTPUT -d 192.168.1.10,192.168.2.10 -j ACCEPT
+
+# LOOPBACK. 
+iptables -A INPUT -i lo -m comment --comment "Loopback in" -j ACCEPT
+## iptables -A OUTPUT -o lo -m comment --comment "Loopback out" -j ACCEPT
+
+# SSH. Puerto personalizado en todos los interfaces. Añadir regla ouput por si se cambia directiva OUTPUT a DROP sin revisar las regls
+iptables -A INPUT -p tcp --dport 22222 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 2222 -j ACCEPT
+# ejemplo de conexión al SSH solo desde ciertas ips:
+##itpables -A INPUT -s 192.168.1.10,192.168.2.10 -p tcp --dport 2222 -j ACCEPT
+
+# PING. ICMP echo
+iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+
+# =========================== FORWARD Y MASQUERADE ==========================
+# FORWARD. Reglas para redirigr tráfico (entre) a/desde subredes conectadas. Se necesitan 2 reglas
+# Para equipos que actúan de pasarela (conectados a múltiples subredes)
+# Enrutar tráfico entrante a un interface específico, con ORIGEN en una LAN y destino en otra. En este caso el interfaz default (internet)
+iptables -A FORWARD -s 192.168.1.0/24 -i <eth_lan> -o <eth_default> -j ACCEPT
+# Enrutar tráfico entrante, con DESTINO a una LAN (viceversa)
+iptables -A FORWARD -d 192.168.1.0/24 -i <eth_default> -o <eth_lan> -j ACCEPT
+
+# FORWARD. Reglas SOLO para puertos específicos (p,e 53 DNS)
+iptables -A FORWARD -s 192.168.1.0/24 -i <eth_lan> -o <eth_default> -p upd --dport 53 -j ACCEPT
+iptables -A FORWARD -d 192.168.1.0/24 -i <eth_default> -o <eth_lan> -p upd --dport 53 -j ACCEPT
+
+# ENMASCARAR (NAT). Enrutar trafico de redes conectadas al equipo a Internet
+# postrouting depende previamente a la reglas de las de FORWARD y OUTPUT
+iptables -t nat -a POSTROUTING -s 192.168.1.1/24 -o <eth_wan> -j MASQUERADE
+
+# ============================ APPS ========================
+# SAMBA. IN desde cualquier IP y a un inteface específico
+iptables -A INPUT -i <eth0> -s 0.0.0.0/0 -p tcp --dport 445 -m state --state NEW,ESTABLISHED -j ACCEPT
+# solo desde una subred:
+iptables -A INPUT -i <eth0> -s 192.168.1.0/24 -p tcp --dport 445 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+# WEB. En todos los interfaces
+iptables -A INPUT -p tcp --dport 80,443 -j ACCEPT
+
