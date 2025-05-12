@@ -23,7 +23,7 @@ sudo apt install openssh-server
 
 # CONFIGURAR
 : << COMMENT
-  OJO: Comprobar configs en sshd_config,d/*.conf
+  OJO: Comprobar configs en sshd_config.d/*.conf
   Lo contenido tiene preferencia sobre sshd_config.
   Si se configura desde remoto, mantener otra sesión abierta hasta verificar conectividad 
   y no quedarse bloqueado, con usuario con permisos sudo.
