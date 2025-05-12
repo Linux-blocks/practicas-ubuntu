@@ -26,8 +26,10 @@ sudo nftables status
 # ===================== CONFIG IPTABLES =================
 # HACER PERMANENTE la config entre inicios del equipo (con iptables). -c incluye contadores: -t es modo test
 sudo apt install iptables-persistent && iptables-save -c > /etc/iptables/rules.v4
+# el comando anterior crea /etc/iptables/, desinstala autom paquete ufw, 
+#e instala autom el paquete netfilter-persistent
 # comprobar estado del servicio
-sudo systemctl is-enable netfilter-persistent.service
+sudo systemctl is-enabled netfilter-persistent.service
 # restaurar manualmente las reglas guardadas
 ## sudo iptables-restore -c < /etc/iptables/rules.v4
 
