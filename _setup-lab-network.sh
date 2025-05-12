@@ -116,11 +116,9 @@ sudo iptables -P INPUT ACCEPT
 sudo iptables -P FORWARD ACCEPT
 sudo iptables -P OUTPUT ACCEPT
 # configurar acceso a internet de las subredes
-sudo iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
-sudo iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT
-sudo iptables -A FORWARD -i enp0s8 -o enp0s3 -j ACCEPT
-sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -m state --state RELATED,ESTABLISHED -j ACCEPT
-sudo iptables -A FORWARD -i enp0s9 -o enp0s3 -j ACCEPT
+sudo iptables -t nat -A POSTROUTING -o enp0s3 -m comment --comment lans-to-internet -j MASQUERADE
+sudo iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -m comment --comment forward-internet-to-lan1 -j ACCEPT
+sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -m state --state RELATED,ESTABLISHED -m comment --comment forward-internet-to-lan2 -j ACCEPT
 
 # Persistir la configuración entre inicios. Se usará el paquete iptables-persistent
 # Si está instalado el paquete, existirá /etc/iptables/
