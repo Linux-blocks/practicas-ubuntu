@@ -15,7 +15,8 @@ PermitRootLogin no
 PasswordAuthentication yes
 CONTENIDO
 
-sudo systemctl reload ssh.service      # aplicar los cambios al servidor ssh
+sudo sshd -t                           # comprobar sintáxis config
+sudo systemctl restart ssh.service     # aplicar los cambios al servidor ssh
 sudo ss -tulp                          # verificar puerto de escucha ssh correcto
 # Si el puerto no es el deseado, editamos el posible servicio ayudante. 
 # Ver NOTA_1 para más info.
@@ -39,16 +40,16 @@ ssh -p 15002 usuario@192.168.1.1       # Usar exit para salir de la sesión ssh
 # CONFIGURACIÓN AVANZADA.   Autenticación ssh keys (debe estar PasswordAuthentication yes)
 # Activar en el servidor ls autenticación de clave pública
 sudo echo "PubkeyAuthentication yes > /etc/ssh/sshd_config.d/10-pubkey-auth.conf
-# aplicar la configuración
-sudo systemctl reload ssh
+sudo sshd -t                           # comprobar sintáxis config
+sudo systemctl restart ssh             # aplicar la configuración
 
 # Hay que crear el par en el usuario cliente. 
 # -N password para la clave privada, o '' para sin. -C cadena identificativa de la clave pública
 sudo ssh-keygen -t ed25519 -N 'usuario-key' -f "~/.ssh/usuario-key" -C "usuario-edkey"
 # e instalar la .pub key en el servidor ssh al que se desea acceder: /home/usuario/.ssh/
-sudo ssh-copy-id -i ~/.ssh/usuario-key.pub -p 15002 192.168.1.10
+sudo ssh-copy-id -i ~/.ssh/usuario-key.pub -p 15002 usuario@192.168.1.10
 # probar a iniciar sesión ssh. No tiene que pedir contraseña. Nota: si la clave privada está protegida, pide la contraseña
-ssh -p 15002 usuario@192.168.1.1
+ssh -p 15002 -i ~/.ssh/usuario-edkey usuario@192.168.1.1
 
 # Para usar ssh en scripts autenticando con keypair y clave privada protegida por contraseña 
 # hay que cachearla previamente para que no la pida
@@ -61,8 +62,8 @@ puede estar controlado por servicio ayudante ssh.socket (desde Ubuntu 22)
 Se puede: 
 (a) Editar la config de este ayudante. (Ver en líneas anteriores)
 (b) Deshabilitarlo
-
 NOTA_1
+
 # (b) deshabiiltar el socket
 sudo systemctl disable --now ssh.socket
 rm -f /etc/systemd/system/ssh.service.d/00-socket.conf
