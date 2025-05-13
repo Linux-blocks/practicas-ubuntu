@@ -19,6 +19,7 @@ R será el FW y el proveedor de Internet (router)
 Para enrutado entre subredes, en equipos Windows, abrir en FW:
 - Supervisión de máquina virtual (solicitud de eco - ICMPv4 de entrada) Todos             ON
 - Archivos e impresoras compartidos (petición eco: ICMPv4 de entrada)   Privado, Público  ON
+! Aplican los cambios del FW al cerrar la configuración avanzada (reglas de entrada) !
 COMMENT
 
 # CONFIGURAR INTERFACES DE RED DE CLIENTES DE LAN
