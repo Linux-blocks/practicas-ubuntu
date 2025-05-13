@@ -49,11 +49,11 @@ sudo ssh-keygen -t ed25519 -N 'usuario-key' -f "~/.ssh/usuario-key" -C "usuario-
 # e instalar la .pub key en el servidor ssh al que se desea acceder: /home/usuario/.ssh/
 sudo ssh-copy-id -i ~/.ssh/usuario-key.pub -p 15002 usuario@192.168.1.10
 # probar a iniciar sesión ssh. No tiene que pedir contraseña. Nota: si la clave privada está protegida, pide la contraseña
-ssh -p 15002 -i ~/.ssh/usuario-edkey usuario@192.168.1.1
+ssh -p 15002 usuario@192.168.1.1      # o explicitando key: ssh -p 15002 -i ~/.ssh/usuario-edkey usuario@192.168.1.1
 
 # Para usar ssh en scripts autenticando con keypair y clave privada protegida por contraseña 
 # hay que cachearla previamente para que no la pida
-eval "$(ssh-agent -s)"        # iniciar el agente
+eval "$(ssh-agent -s)"                # iniciar el agente
 ssh-add ~/.ssh/usuario-key
 
 : << 'NOTA_1'
