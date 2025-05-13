@@ -1,0 +1,49 @@
+
+
+# !! Se puede evitar continuos sudo en esta fase 
+# abriendo sesión root con su - 
+
+# INSTALACIÓN
+sudo apt update                        # actualizar la lista de paquetes
+sudo apt install openssh-server        # instalar el servidor y dependencias
+sudo systemctl status ssh.service      # comprobar que el servicio está up y sin errores
+
+# CONFIGURACIÓN. Básica
+sudo tee '/etc/ssh/sshd_confg.d/00-custom.conf' << 'CONTENIDO'
+Port 15002
+PermitRootLogin no
+CONTENIDO
+
+sudo systemctl reload ssh.service      # aplicar los cambios al servidor ssh
+sudo ss -tulp                          # verificar puerto de escucha ssh correcto
+# Si el puerto no es el deseado, editamos el posible servicio ayudante. 
+# Ver NOTA_1 para más info.
+sudo systemctl edit ssh.socket         # editar fichero config (opción a)
+: << 'CONTENIDO'
+Descomentar ListenStream= y añadir ListemStream=15002
+CONTENIDO
+
+sudo systemctl daemon-reload           # ainformar de cambios a systemd
+sudo systemctl restart ssh.socket      # reinciar el servicio para aplicar
+sudo ss -tulp                          # recomprobar puerto de escucha
+
+# COMPROBAR CONECTIVIDAD AL SERVIDOR SSH
+ssh -p 15002 usuario@192.168.1.1       # Usar exit para salir de la sesión ssh
+
+
+: << 'NOTA_1'
+Cuando el puerto de escucha no cambia al editar sshd_config 
+puede estar controlado por servicio ayudante ssh.socket (desde Ubuntu 22)
+Se puede: 
+(a) Editar la config de este ayudante. (Ver en líneas anteriores)
+(b) Deshabilitarlo
+
+NOTA_1
+# (b) deshabiiltar el socket
+sudo systemctl disable --now ssh.socket
+rm -f /etc/systemd/system/ssh.service.d/00-socket.conf
+rm -f /etc/systemd/system/ssh.socket.d/addresses.conf
+systemctl daemon-reload
+systemctl enable --now ssh.service
+
+
