@@ -36,12 +36,14 @@ path = /srv/share_compartido_1
 browseable = yes
 writable = yes
 read only = no
+# inicialmente yes para pruebas de conexión, luego cambiarlo a no
 guest ok = yes
 valid users = usuario @grpsamba
 CONTENIDO
 
 sudo mkdir /srv/share_compartido_1                       # crear la carpeta compartida
-sudo chown -R :usuario /srv/share_compartido_1
+# CONFIGURAR AUTENTICACIÓN SAMBA.
+sudo chown -R :usuario /srv/share_compartido_1           # Asignar el grupo samba a ACL de la carpeta
 sudo -R g+sw /srv/share_compartido_1                     # +s asignar el grupo de la carpeta a nvos ficheros/carpetas creados
 testparm -s                                              #  comprobar sintáxis conf correcta
 sudo systemctl restart smbd                              # reiniciar servicio para aplicar cambios
@@ -55,9 +57,7 @@ sudo pdbedit -L                                          # Listar usuario samba 
 sudo smbpasswd -a usuario && sudo smbpasswd -e usuario   # añadir usuario a samba.
 sudo pdbedit -L                                          # Comprobar que se ha añadido correctamente
 
-
 ############### PRUEBAS DE ACCESO ##############
-
 : << 'INSTRUCCIONES'
 (A) Desde el UI de cliente Ubuntu desktop. En el explorador de ficheros:
 "+ Otras Ubicaciones"
