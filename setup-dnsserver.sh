@@ -1,4 +1,6 @@
-#!/bin/sh
+##!/bin/sh
+
+# https://www.digitalocean.com/community/tutorials/how-to-configure-bind-as-a-private-network-dns-server-on-ubuntu-18-04-es
 
 : << COMMENT
 En el servidor [R] (Ubuntu server 24 LTS)
@@ -11,14 +13,12 @@ COMMENT
 
 # INSTALAR SERVIDOR DNS (bind9)
 sudo apt update
-sudo apt list | grep bind9
 sudo apt install bind9 bind9utils bind9-doc
-# comprobar estado del servicio
-systemctl status bind9  # o también por 'named'
+systemctl status bind9                          # o también por 'named'
 
 # EDITAR opciones del servidor, guardando el fichero instalado por defecto
 sudo cp /etc/bind/named.conf.options /etc/bind/named.conf.options.default
-tee /etc/bind/named.conf.options < 'EOF'
+tee /etc/bind/named.conf.options < 'CONTENIDO'
 acl LANS { 192.168.1.0/24; 192.168.2.0/24; };
 
 options {
@@ -32,28 +32,29 @@ options {
 #  allow-recursion { LANS; };
 #  allow-query-cache { LANS; };
 };
-EOF
-# comprobar sintáxis. Si ok no devuelve nada
-sudo named-checkconf /etc/bind/named.conf.options
-# aplicar cambios
-sudo systemctl restart named
+CONTENIDO
+
+sudo named-checkconf /etc/bind/named.conf.options   # comprobar sintáxis
+sudo systemctl restart named                        # aplicar cambios
+
 
 # (4) Configurar cliente linux desde consola: En [SWEB] (ver _setup-lab-network)
 # obtener la NIC
-ip -brief addr show to 192.168.1.0/24  # o abrevia con 'ip a' y busca
+ip -brief addr show to 192.168.1.0/24        # o abrevia con 'ip a' y busca
 # editar NETPLAN /etc/netplan/*.yaml
 # Nota: Si la configuración es con 'network', ver ejemplo en _setup-lab-network
-: << 'COMMENT'
+sudo nano /etc/netplan/<file>.yaml
+: << 'CONTENIDO'
 Se añadirá al fichero, dentro de la sección network: - ethernets: - <nic_name>:
   nameservers:
-    addresses: [ 10.0.2.1, 8.8.4.4 ]       # ip del servidor dns [R]
-    search [ midominio.example ]  # si se configuró una zona en el servidor dns
-COMMENT
+    addresses: [ 10.0.2.1, 8.8.4.4 ]    # ip del servidor dns [R]
+    search [ midominio.example ]        # si se configuró una zona en el servidor dns
+CONTENIDO
 # Editando directamente el fichero, aplica al guardarlo
 # Si se edita netplan con comandos CLI:
-sudo netplan try    # aplica con cuenta atrás para revertir a config anterior, o enter para aplicar definitivamente
-sudo netplan -debug apply  # aplicar configuración por CLI
-netplan status      # comprobar config y "online status:" Si estuviera offline, ejecutar sudo netplan apply y volver a comprobar
+sudo netplan try            # comprobar y aplicar cambios o revertir (timeout)
+#sudo netplan -debug apply  # aplicar configuración por CLI
+netplan status              # comprobar config y "online status:" Si estuviera offline, ejecutar sudo netplan apply y volver a comprobar
 # comprobar estado de red actual:
 ip addr
 
@@ -78,12 +79,22 @@ check: resolvectl status  # de cada ethernet
 ++ cambios vía netplan (config nameservers)
 Modificar el yaml con nameservers -addresses para las NIC
 
-** Se puede desactivar el stub listener, y liberar el puerto 23 para el dns server, 
+** Se puede desactivar el stub listener, y liberar el puerto 53 para el dns server, 
 editando /etc/system/resolve/resolv.conf DNSStubListener=no
 netplan try y posiblemente reiniciar el servidor con sudo reboot.
 COMMENT
 
-# CONFIGURAR FIREWALL para permitir in a 53 UDP
+# CONFIGURAR FIREWALL para permitir in a 53 UDP. Ver fichero setup-firewall.txt
+
+# CREAR ZONA 
+sudo nano /etc/bind/named.conf.local
+: << 'CONTENIDO'
+zone "dominio.example" {
+  type master;
+  file "/etc/bind/zones/db.
+
+}
+CONTENIDO
 
 # comprobar configuración de zona dns midominio.example, por nombre y por fqdn
 # desde [R] y desde otro cliente en LANS
