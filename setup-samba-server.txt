@@ -1,0 +1,64 @@
+
+# !! Se puede evitar continuos sudo en esta fase 
+# abriendo sesión root con sudo -i   el prompt cambia de $ a #. Verificar con whoami
+
+############### TAREAS A REALIZAR ###############
+1. Instalar samba
+2. Configuración           configurar compartido en /etc/samba/samba.conf.d/share_compartido_1.conf
+3. Compartir carpeta       /srv/samba/compartido_1
+4. Configurar permisos para la carpeta
+5. Configurar cortafuegos
+6. Pruebas de acceso
+
+############### INSTALACIÓN ###############
+sudo samba -i                          # info del estado actual
+sudo apt update                        # actualizar la lista de paquetes
+sudo apt install samba                 # instalar el servidor y dependencias (~31)
+sudo systemctl status smbd             # comprobar estado servicio. enabled, preset: enabled, active, status: ready to serve
+#sudo systemctl status nmbd            # netbios over IP
+
+############### CONFIGURACIÓN BÁSICA ###############
+sudo cp -prf /etc/samba/samba.conf /etc/samba/samba.conf.bak  # backup conf inicia
+sudo testparm -s                       # comprobar sintáxis conf correcta
+
+# Compartir una carpeta con samba (share)
+sudo nano /etc/samba/smb.conf
+: << 'CONTENIDO'
+Añadir los include como líneas finales del fichero
+include = /etc/samba/samba.conf.d/share_compartido_1.conf
+CONTENIDO
+
+# configurar parámetros de la carpeta compartida
+sudo touch /etc/samba/smb.conf.d/share_compartido_1.conf
+sudo tee /etc/samba/smb.conf.d/share_compartido_1.conf << 'CONTENIDO'
+[compartido_1]
+path = /srv/share_compartido_1
+browseable = yes
+writable = yes
+read only = no
+guest ok = yes
+valid users = usuario @grpsamba
+CONTENIDO
+
+testparm -s                             # comprobar sintáxis conf correcta
+sudo mkdir /srv/share_compartido_1      # crear la carpeta compartida
+# OPC. Ajustar permisos para el share (si fuera necesario). En samba y en la carpeta.
+# OPC. Añadir usuarios a samba
+sudo smbpassw -a
+
+sudo systemctl restart smbd              # reiniciar servicio para aplicar cambios
+
+############### PRUEBAS DE ACCESO ##############
+
+: << 'INSTRUCCIONES'
+(A) Desde el UI de cliente Ubuntu desktop. En el explorador de ficheros:
+"+ Otras Ubicaciones"
+Conectar al servidor: smb://192.168.1.1/compartido_1
+(B) Desde terminal linux. Nota: smbclient puede no estar instalado por defecto. 
+smbclient //192.168.1.1/compartido_1      # smbclient -L 192.168.1.1   # lista los shares existentes
+(C) Desde Windows Explorer: 
+
+INSTRUCCIONES
+
+
+
