@@ -1,0 +1,55 @@
+
+############### DATOS DE EJEMPLO UTILIZADOS ###############
+# Ubuntu server NICs: enp0s8 LAN_A; enp0s9 LAN_B; enp0s3 server_network
+
+############### GESTIONAR TIPO FW ###############
+# Desde feb 2021 Ubuntu no da soporte a iptables, usando nftables
+sudo iptables --version                   # buscar si nftables en output
+update-alternatives --query iptables      # mantiene symlinks al comando seleccionado. En este caso, al fw
+
+############### PERSISTEMCIA DE REGLAS ###############
+sudo apt update
+# instalar el paquete de persistencia de reglas fw
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+sudo apt-get -y install iptables-persistent     # y crea copia de las reglas actuales
+sudo systemctl status netfilter-persistent      # mantiene la persistencia de reglas rules.* entre inicios
+
+sudo iptables -L                                # estado actual del FW
+sudo sh -c "iptables-save > /etc/iptables/rules.v4"      # cuando el usuario no es root
+#sudo iptables-save | sudo tee /etc/iptables/rules.v4    # otra versión con pipping
+
+############### CONFIGURAR FORWARDING y NAT ###############
+# NAT. Salida a internet de subredes internas conectadas a este equipo. Usar la red default
+# Con esta y habilitando forwarding en sysctl.conf, las LAN acceden a Internet
+sudo iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
+
+# FORWARD. Establecer rutas entre las redes conectadas al servidor
+sudo iptables -A FORWARD -i enp0s3 -o enp0s8 -m conntrack -ctstate ESTABLISHED,RELATED -m comment --server-to-lan1 -j ACCEPT
+sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -m conntrack -ctstate ESTABLISHED,RELATED -m comment --server-to-lan2 -j ACCEPT
+
+# PRUEBAS DE FUNCIONAMIENTO
+# desde equipos LAN, navegar página web.
+#ping 191.168.20            # conexión desde equipo de LAN1 a LANS
+#ping 191.168.10            # conexión desde equipo de LAN2 a LAN1
+
+############### OUTPUT ACCEPT|DROP ###############
+# Si la directiva es abierta ( sudo iptables -P OUTPUT ACCEPT ) 
+# esta regla permite IN a conexiones iniciadas desde enp0s3
+sudo iptables -A INPUT -m conntrack --ctstate REALATED,ESTABLISHED -j ACCEPT
+# Si la directiva es cerrada ( sudo iptables -P OUTPUT DROP|REJECT )
+# se necesitan pares INPUT OUTPUT para que la comunicación sea posible
+
+############### SSH ###############
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+############### PING ###############
+
+############### SAMBA ###############
+sudo iptables -A INPUT -p tcp --dport 445 -j ACCEPT
+
+############### DNS ###############
+sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
+
+############### WEB SERVER ###############
+sudo iptables -A INPUT -p udp -multiport --dports 80,443 -j ACCEPT
