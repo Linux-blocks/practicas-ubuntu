@@ -4,11 +4,13 @@
 # abriendo sesión root con sudo -i   el prompt cambia de $ a #. Verificar con whoami
 
 # INSTALACIÓN
+# -----------
 sudo apt update                        # actualizar la lista de paquetes
 sudo apt install openssh-server        # instalar el servidor y dependencias
 sudo systemctl status ssh.service      # comprobar que el servicio está up y sin errores
 
 # CONFIGURACIÓN. Básica
+# ---------------------
 sudo tee '/etc/ssh/sshd_confg.d/00-custom.conf' << 'CONTENIDO'
 Port 15002
 PermitRootLogin no
@@ -29,15 +31,19 @@ sudo systemctl daemon-reload           # ainformar de cambios a systemd
 sudo systemctl restart ssh.socket      # reinciar el servicio para aplicar
 sudo ss -tulp                          # recomprobar puerto de escucha
 
-# CONFIGURAR FW
-SUDO IPTABLES -A INPUT -p 15002 -j ACCEPT
+# CONFIGURAR FW. Ver NOTA_2 para ufw
+# -------------
+sudo iptables -A INPUT -p tcp --dport 15002 -j ACCEPT
+sudo iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT    # si directiva OUTPUT DROP|REJECT
 
-# COMPROBAR CONECTIVIDAD AL SERVIDOR SSH
-ssh -p 15002 usuario@192.168.1.1       # Usar exit para salir de la sesión ssh
+# COMPROBAR CONECTIVIDAD AL SERVIDOR SSH. Usar exit para salir de la sesión ssh
+ssh -p 15002 usuario@192.168.1.1       # desde linux
+# desde windows
 
 # ---------------------- FIN BÁSICA -----------------
 
 # CONFIGURACIÓN AVANZADA.   Autenticación ssh keys (debe estar PasswordAuthentication yes)
+# ----------------------
 # Activar en el servidor ls autenticación de clave pública
 sudo echo "PubkeyAuthentication yes > /etc/ssh/sshd_config.d/10-pubkey-auth.conf
 sudo sshd -t                           # comprobar sintáxis config
@@ -56,6 +62,10 @@ ssh -p 15002 usuario@192.168.1.1      # o explicitando key: ssh -p 15002 -i ~/.s
 eval "$(ssh-agent -s)"                # iniciar el agente
 ssh-add ~/.ssh/usuario-key
 
+# ---------------
+# NOTAS 
+# ---------------
+
 : << 'NOTA_1'
 Cuando el puerto de escucha no cambia al editar sshd_config 
 puede estar controlado por servicio ayudante ssh.socket (desde Ubuntu 22)
@@ -71,4 +81,7 @@ rm -f /etc/systemd/system/ssh.socket.d/addresses.conf
 systemctl daemon-reload
 systemctl enable --now ssh.service
 
+: << 'NOTA_2
+TODO!
 
+NOTA_2
