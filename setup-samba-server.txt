@@ -40,13 +40,21 @@ guest ok = yes
 valid users = usuario @grpsamba
 CONTENIDO
 
-testparm -s                             # comprobar sintáxis conf correcta
-sudo mkdir /srv/share_compartido_1      # crear la carpeta compartida
-# OPC. Ajustar permisos para el share (si fuera necesario). En samba y en la carpeta.
-# OPC. Añadir usuarios a samba
-sudo smbpassw -a
+sudo mkdir /srv/share_compartido_1                       # crear la carpeta compartida
+sudo chown -R :usuario /srv/share_compartido_1
+sudo -R g+sw /srv/share_compartido_1                     # +s asignar el grupo de la carpeta a nvos ficheros/carpetas creados
+testparm -s                                              #  comprobar sintáxis conf correcta
+sudo systemctl restart smbd                              # reiniciar servicio para aplicar cambios
 
-sudo systemctl restart smbd              # reiniciar servicio para aplicar cambios
+############### AUTENTICACIÓN SAMBA ###############
+# Sincronizar autom PAM cuando un usuario cambie su contraseña samba: smb.conf -> unix password sync = yes
+
+# OPC. Ajustar permisos para el share (si fuera necesario). En samba y en la carpeta.
+sudo pdbedit -L                                          # Listar usuario samba actuales
+#sudo adduser usuario                                    #  El usuario samba debe existir ANTES en el sistema!
+sudo smbpasswd -a usuario && sudo smbpasswd -e usuario   # añadir usuario a samba.
+sudo pdbedit -L                                          # Comprobar que se ha añadido correctamente
+
 
 ############### PRUEBAS DE ACCESO ##############
 
@@ -55,7 +63,7 @@ sudo systemctl restart smbd              # reiniciar servicio para aplicar cambi
 "+ Otras Ubicaciones"
 Conectar al servidor: smb://192.168.1.1/compartido_1
 (B) Desde terminal linux. Nota: smbclient puede no estar instalado por defecto. 
-smbclient //192.168.1.1/compartido_1      # smbclient -L 192.168.1.1   # lista los shares existentes
+smbclient //192.168.1.1/compartido_1 -U usuario          # smbclient -L 192.168.1.1   # lista los shares existentes
 (C) Desde Windows Explorer: 
 
 INSTRUCCIONES
