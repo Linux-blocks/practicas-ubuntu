@@ -41,21 +41,26 @@ guest ok = yes
 valid users = usuario @grpsamba
 CONTENIDO
 
+# Crear carpeta compartida y establecer permisos ACL y 
 sudo mkdir /srv/share_compartido_1                       # crear la carpeta compartida
-# CONFIGURAR AUTENTICACIÓN SAMBA.
 sudo chown -R :usuario /srv/share_compartido_1           # Asignar el grupo samba a ACL de la carpeta
 sudo -R g+sw /srv/share_compartido_1                     # +s asignar el grupo de la carpeta a nvos ficheros/carpetas creados
 testparm -s                                              #  comprobar sintáxis conf correcta
 sudo systemctl restart smbd                              # reiniciar servicio para aplicar cambios
 
+# Realizar Pruebas de acceso con config simple: fw default y guest ok = yes
+
 ############### AUTENTICACIÓN SAMBA ###############
-# Sincronizar autom PAM cuando un usuario cambie su contraseña samba: smb.conf -> unix password sync = yes
+# Sincronizar autom PAM cuando un usuario cambie su contraseña samba: smb.conf -> unix password sync = yes (por defecto)
 
 # OPC. Ajustar permisos para el share (si fuera necesario). En samba y en la carpeta.
 sudo pdbedit -L                                          # Listar usuario samba actuales
 #sudo adduser usuario                                    #  El usuario samba debe existir ANTES en el sistema!
 sudo smbpasswd -a usuario && sudo smbpasswd -e usuario   # añadir usuario a samba.
 sudo pdbedit -L                                          # Comprobar que se ha añadido correctamente
+
+############### FIREWALL ##############
+# ver fichero setup-firewall.txt
 
 ############### PRUEBAS DE ACCESO ##############
 : << 'INSTRUCCIONES'
