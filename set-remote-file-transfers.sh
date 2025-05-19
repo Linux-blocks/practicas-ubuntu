@@ -39,6 +39,8 @@ fi
 ############### CREAR CRON DE SCRIPT) ###############
 # formato tarea: m h month-day month weekday command
 # cron tutorial: https://www.hostinger.com/es/tutoriales/cron-job
+# -e interactivo. 
+# add job vía scripting: crontabcont
 crontab -e      # abre el editor de crons del usuario actual. Añadir -u <username> para el de uno en concreto
 : << 'CONTENIDO'
 5  0  *  *  *  /home/usuario/backup.sh >> /home/backups.log
