@@ -7,11 +7,12 @@
 2. Configuración           configurar compartido en /etc/samba/samba.conf.d/share_compartido_1.conf
 3. Compartir carpeta       /srv/samba/compartido_1
 4. Configurar permisos para la carpeta
-5. Configurar cortafuegos
-6. Pruebas de acceso
+5. Autenticación samba
+6. Configurar cortafuegos
+7. Pruebas de acceso
 
 ############### INSTALACIÓN ###############
-sudo samba -i                          # info del estado actual
+samba -i && samba -V                   # info del estado actual y versión
 sudo apt update                        # actualizar la lista de paquetes
 sudo apt install samba                 # instalar el servidor y dependencias (~31)
 sudo systemctl status smbd             # comprobar estado servicio. enabled, preset: enabled, active, status: ready to serve
@@ -41,7 +42,7 @@ guest ok = yes
 valid users = usuario @grpsamba
 CONTENIDO
 
-# Crear carpeta compartida y establecer permisos ACL y 
+############### CARPETA COMPARTIDA Y PERMISOS ACL ###############
 sudo mkdir /srv/share_compartido_1                       # crear la carpeta compartida
 sudo chown -R :usuario /srv/share_compartido_1           # Asignar el grupo samba a ACL de la carpeta
 sudo -R g+sw /srv/share_compartido_1                     # +s asignar el grupo de la carpeta a nvos ficheros/carpetas creados
@@ -70,8 +71,11 @@ Conectar al servidor: smb://192.168.1.1/compartido_1
 (B) Desde terminal linux. Nota: smbclient puede no estar instalado por defecto. 
 smbclient //192.168.1.1/compartido_1 -U usuario          # smbclient -L 192.168.1.1   # lista los shares existentes
 (C) Desde Windows Explorer: 
-
 INSTRUCCIONES
+
+############### ERRORES AUTENTICACIÓN ###############
+
+sudo pbdedit -L        # listar usuario samba actuales
 
 
 
