@@ -30,8 +30,8 @@ sudo iptables -A FORWARD -i enp0s3 -o enp0s9 -m conntrack -ctstate ESTABLISHED,R
 
 # PRUEBAS DE FUNCIONAMIENTO
 # desde equipos LAN, navegar página web.
-#ping 191.168.20            # conexión desde equipo de LAN1 a LANS
-#ping 191.168.10            # conexión desde equipo de LAN2 a LAN1
+#ping 191.168.1.10            # conexión desde equipo de LAN1 a LANS
+#ping 191.168.2.10            # conexión desde equipo de LAN2 a LAN1
 
 ############### OUTPUT ACCEPT|DROP ###############
 # Si la directiva es abierta ( sudo iptables -P OUTPUT ACCEPT ) 
