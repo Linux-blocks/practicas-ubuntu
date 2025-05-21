@@ -39,10 +39,10 @@ writable = yes
 read only = no
 # inicialmente yes para pruebas de conexión, luego cambiarlo a no
 guest ok = yes
-valid users = usuario @grpsamba
+#valid users = usuario @grupo
 CONTENIDO
 
-############### CARPETA COMPARTIDA Y PERMISOS ACL ###############
+############### CREAR CARPETA COMPARTIDA Y PERMISOS ACL ###############
 sudo mkdir /srv/share_compartido_1                       # crear la carpeta compartida
 sudo chown -R :usuario /srv/share_compartido_1           # Asignar el grupo samba a ACL de la carpeta
 sudo -R g+sw /srv/share_compartido_1                     # +s asignar el grupo de la carpeta a nvos ficheros/carpetas creados
@@ -50,13 +50,16 @@ testparm -s                                              #  comprobar sintáxis 
 sudo systemctl restart smbd                              # reiniciar servicio para aplicar cambios
 
 # Realizar Pruebas de acceso con config simple: fw default y guest ok = yes
+# ver sección de PRUEBAS más adelante
 
 ############### AUTENTICACIÓN SAMBA ###############
-# Sincronizar autom PAM cuando un usuario cambie su contraseña samba: smb.conf -> unix password sync = yes (por defecto)
+# Hay una sección más adelante sobre seguridad (autenticación)
+# Sincronizar autom PAM cuando un usuario cambie su contraseña samba: smb.conf -> 
+unix password sync = yes (por defecto)
 
 # OPC. Ajustar permisos para el share (si fuera necesario). En samba y en la carpeta.
-sudo pdbedit -L                                          # Listar usuario samba actuales
-#sudo adduser usuario                                    #  El usuario samba debe existir ANTES en el sistema!
+sudo pdbedit -L                                # Listar usuario samba actuales
+#sudo adduser usuario                          #  <usuario> debe existir ANTES en el sistema!
 sudo smbpasswd -a usuario && sudo smbpasswd -e usuario   # añadir usuario a samba.
 sudo pdbedit -L                                          # Comprobar que se ha añadido correctamente
 
@@ -66,16 +69,33 @@ sudo pdbedit -L                                          # Comprobar que se ha a
 ############### PRUEBAS DE ACCESO ##############
 : << 'INSTRUCCIONES'
 (A) Desde el UI de cliente Ubuntu desktop. En el explorador de ficheros:
-"+ Otras Ubicaciones"
-Conectar al servidor: smb://192.168.1.1/compartido_1
+"+ Otras Ubicaciones"  y en el textbox: smb://host/shared
+Conectar al servidor: smb://192.168.1.1[/compartido_1]
 (B) Desde terminal linux. Nota: smbclient puede no estar instalado por defecto. 
-smbclient //192.168.1.1/compartido_1 -U usuario          # smbclient -L 192.168.1.1   # lista los shares existentes
+smbclient -L 192.168.1.1                           # lista los shares existentes
+smbclient //192.168.1.1/compartido_1 -U usuario    # acceso con usuario específico
+# Obtener fichero o carpeta:
+smb: \> lcd ~/    (cambiar de ruta en el cliente)
+smb: \> get <fichero|carpeta>     (a la ruta actual en el cliente)
 (C) Desde Windows Explorer: 
+\\host\shared
 INSTRUCCIONES
 
-############### ERRORES AUTENTICACIÓN ###############
+############### ERRORES ACCESO ###############
+# Pruebas en el servidor samba:
+sudo pbdedit -L                  # listar usuario samba actualesç
+testparm                         # Permite revisar la conf actual global y de compartidos
+cat /var/log/samba/              # logs
+cat /var/lib/samba/usershares/compartido_1  # contiene definición y permisos del compartido
+# Permisos según usershare_acl=S-1-1-0:F (= everyone Full Access; R Deny; R, read-only)
+net usershare info --long        # lista la config de todos los compartidos del host
 
-sudo pbdedit -L        # listar usuario samba actuales
-
+############### SEGURIDAD EN SAMBA ###############
+1. Añadir usuarios existentes en el sistema a la bd samba
+2. Definir usuario en [shared] Estos overrides el resto:  read list = y write list = 
+3. force user = <user> | force group = <group>
+            Permite a varios usuarios acceder al shared owned by <user>
+            que debe completarse con: valid users = user  user2
+            que hace que SOLO estos pueda acceder al shared
 
 
